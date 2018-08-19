@@ -2,8 +2,12 @@ function Get-AppVeyorArtifact {
     param(
         [Parameter( Mandatory, ValueFromPipeline )]
         [ValidateNotNullOrEmpty()]
-        [AppVeyor.Job]
+        # [AppVeyor.Job]
+        [PSCustomObject]
         $Job,
+
+        [String]
+        $OutPath = (Get-Location -PSProvider FileSystem).Path,
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
@@ -26,13 +30,31 @@ function Get-AppVeyorArtifact {
 
     process {
         $invokeRestMethodSplat = @{
-            Uri = "https://ci.appveyor.com/api/buildjobs/{0}/artifacts" -f $Job.Id
-            Method = "GET"
-            Headers = @{
+            Uri         = "https://ci.appveyor.com/api/buildjobs/{0}/artifacts" -f $Job.JobId
+            Method      = "GET"
+            Headers     = @{
                 "Authorization" = "Bearer $Token"
             }
             ContentType = "application/json"
         }
-        Invoke-RestMethod @invokeRestMethodSplat
+        $artifacts = Invoke-RestMethod @invokeRestMethodSplat
+
+        if ($OutPath) {
+            $artifacts | ForEach-Object {
+                $artifact = $_
+                $invokeRestMethodSplat = @{
+                    Uri         = "https://ci.appveyor.com/api/buildjobs/{0}/artifacts/{1}" -f $Job.JobId, $artifact.fileName
+                    Method      = "GET"
+                    Headers     = @{
+                        "Authorization" = "Bearer $Token"
+                    }
+                    OutFile     = "$OutPath/$($artifact.fileName)"
+                }
+                Invoke-RestMethod @invokeRestMethodSplat
+            }
+        }
+        else {
+            $artifacts
+        }
     }
 }

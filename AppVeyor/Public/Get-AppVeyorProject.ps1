@@ -61,11 +61,6 @@ function Get-AppVeyorProject {
             ContentType = "application/json"
         }
         Write-Debug "Using `$invokeRestMethodSplat"
-        $response = Invoke-RestMethod @invokeRestMethodSplat
-
-        New-Object -TypeName PSCustomObject -Property @{
-            Project = [AppVeyor.Project]$response.project
-            Build = [AppVeyor.Build]$response.build
-        }
+        Invoke-RestMethod @invokeRestMethodSplat
     }
 }
